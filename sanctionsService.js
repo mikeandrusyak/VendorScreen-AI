@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const OPENSANCTIONS_BASE_URL = 'https://api.opensanctions.org/v1';
+const OPENSANCTIONS_BASE_URL = 'https://api.opensanctions.org';
 
 // Risk level constants matching Monday.com status column labels
 const RISK_LEVEL = {
@@ -10,7 +10,7 @@ const RISK_LEVEL = {
 };
 
 async function checkVendor(vendorName) {
-  const response = await axios.get(`${OPENSANCTIONS_BASE_URL}/search/`, {
+  const response = await axios.get(`${OPENSANCTIONS_BASE_URL}/search/default`, {
     params: { q: vendorName, limit: 5 },
     headers: { Authorization: `ApiKey ${process.env.OPENSANCTIONS_API_KEY}` },
   });

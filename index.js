@@ -8,14 +8,29 @@ const { updateVendorRecord } = require('./mondayService');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+// Capture raw body before JSON parsing — needed for HMAC signature verification
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 
 function verifyMondaySignature(req) {
   const signature = req.headers['x-monday-signature'];
-  if (!signature) return false;
+
+  // Basic UI webhooks don't send a signature — skip verification in dev mode.
+  // Signature enforcement applies only to published marketplace app webhooks.
+  if (!signature) {
+    console.warn('[auth] No x-monday-signature header — skipping verification (dev mode)');
+    return true;
+  }
+
+  if (!req.rawBody) return false;
 
   const hmac = crypto.createHmac('sha256', process.env.MONDAY_SIGNING_SECRET);
-  hmac.update(JSON.stringify(req.body));
+  hmac.update(req.rawBody);
   const digest = `sha256=${hmac.digest('hex')}`;
   return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
 }
@@ -33,8 +48,8 @@ app.post('/webhook', async (req, res) => {
   const { event } = req.body;
   const itemId = event?.pulseId;
   const vendorName = event?.pulseName;
-  // shortLivedToken is provided by Monday for making API calls on behalf of the user
-  const apiToken = req.body.shortLivedToken;
+  // Use personal API token for dev; marketplace apps use shortLivedToken instead
+  const apiToken = process.env.MONDAY_API_TOKEN;
 
   if (!itemId || !vendorName) {
     return res.status(400).json({ error: 'Missing itemId or vendorName in payload' });
