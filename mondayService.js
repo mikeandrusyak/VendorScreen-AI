@@ -4,9 +4,10 @@ const monday = mondaySdk();
 
 // Maps our risk levels to Monday.com status column index values
 const STATUS_INDEX = {
-  Clear: 1,
-  Warning: 2,
-  Critical: 3,
+  'Clear': 1,
+  'Warning': 0,
+  'Critical': 2,
+  'Pending': 5
 };
 
 async function updateVendorRecord(itemId, riskLevel, details) {
